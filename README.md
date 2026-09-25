@@ -14,7 +14,21 @@ cp .env.example .env.local   # Supabase URL / anon key 입력
 npm run dev
 ```
 
-Supabase SQL Editor에서 `supabase/schema.sql`을 실행하면 테이블과 RLS 정책이 생성됩니다 (재실행 가능).
+1. Supabase SQL Editor에서 `supabase/schema.sql`을 실행합니다 (재실행 가능). 모든 테이블에 본인 행만 접근하는 RLS가 걸립니다.
+2. Authentication → URL Configuration에서 Site URL을 앱 주소로, Redirect URLs에 `<앱 주소>/auth/confirm`을 추가합니다.
+3. `/login`에서 이메일·비밀번호로 가입합니다. 이메일 확인을 끄면 가입 즉시 로그인됩니다.
+
+v1 스키마 테이블(`capital_portfolios` 등)은 자동으로 지우지 않습니다. 필요 없으면 `schema.sql` 끝의 주석 블록을 실행하세요.
+
+## 화면
+
+| 경로 | 내용 |
+| --- | --- |
+| `/` | Spaced Reflection(과거 글 하루 한 편), 자본 요약, 주간 마일리지, 오늘의 운동 |
+| `/capital` | 자산 표·등록/수정/삭제, 현재 vs 목표 비중 차트, 밴드 이탈 경고, 신규 현금 배분 계산기, 저축·배당 입금, USD/KRW 환율 |
+| `/mind` | 에세이 목록, 원칙(투자/삶/신체) |
+| `/mind/new`, `/mind/[id]` | 마크다운 에디터 + 실시간 미리보기 |
+| `/body` | 맨몸운동 빠른 입력(볼륨 자동 계산), 러닝 입력(페이스 자동 계산), 주간 마일리지 |
 
 ## 스크립트
 
@@ -30,16 +44,21 @@ Supabase SQL Editor에서 `supabase/schema.sql`을 실행하면 테이블과 RLS
 
 ```
 src/
-  app/                  Next.js App Router
+  app/
+    (dashboard)/        로그인 필요한 화면 (홈, capital, mind, body)
+    login/, auth/       로그인·회원가입, 이메일 확인 콜백
   components/ui/        shadcn/ui 컴포넌트
   lib/
-    supabase/           브라우저·서버 클라이언트, 세션 갱신 proxy, DB 타입
-    utils.ts            cn()
-  modules/
-    capital/            자본 — 포트폴리오 계산 엔진 (engine/)
-    mind/               사유 — 에세이/메모
-    body/               신체 — 맨몸운동, 러닝
-  proxy.ts              요청마다 Supabase 세션 갱신
+    supabase/           클라이언트, requireUser, 세션 갱신 proxy, DB 타입
+    forms.ts            Server Action 폼 검증·상태 공통 유틸
+    date.ts             Asia/Seoul 기준 날짜 계산
+  modules/<module>/
+    lib/                순수 함수 + zod 스키마 (단위 테스트 대상)
+    components/         화면 컴포넌트
+    actions.ts          Server Actions (CRUD)
+    queries.ts          서버 컴포넌트용 조회
+    capital/engine/     포트폴리오 계산 엔진
+  proxy.ts              세션 갱신, 비로그인 요청은 /login으로
 supabase/schema.sql     DB 스키마 + RLS
 ```
 

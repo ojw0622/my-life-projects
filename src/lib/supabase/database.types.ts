@@ -14,183 +14,235 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-type Timestamps = {
-  created_at: string;
-  updated_at: string;
-};
+export type PortfolioCategory =
+  | "index_etf"
+  | "stock"
+  | "bond"
+  | "commodity"
+  | "crypto"
+  | "cash"
+  | "other";
+export type Currency = "KRW" | "USD";
+export type CashFlowType = "saving" | "dividend";
+export type PrincipleCategory = "investment" | "life" | "body";
 
 export type Database = {
   public: {
     Tables: {
-      capital_portfolios: {
-        Row: Timestamps & {
+      portfolios: {
+        Row: {
           id: string;
           user_id: string;
-          name: string;
-          base_currency: string;
+          asset_name: string;
+          ticker: string | null;
+          category: PortfolioCategory;
+          currency: Currency;
+          target_ratio: number;
+          current_qty: number;
+          avg_buy_price: number;
+          current_price: number;
+          tolerance_band: number;
+          created_at: string;
+          updated_at: string;
         };
-        Insert: Partial<Timestamps> & {
+        Insert: {
           id?: string;
           user_id?: string;
-          name: string;
-          base_currency?: string;
+          asset_name: string;
+          ticker?: string | null;
+          category?: PortfolioCategory;
+          currency?: Currency;
+          target_ratio?: number;
+          current_qty?: number;
+          avg_buy_price?: number;
+          current_price?: number;
+          tolerance_band?: number;
+          created_at?: string;
+          updated_at?: string;
         };
-        Update: Partial<Timestamps> & {
+        Update: {
           id?: string;
           user_id?: string;
-          name?: string;
-          base_currency?: string;
+          asset_name?: string;
+          ticker?: string | null;
+          category?: PortfolioCategory;
+          currency?: Currency;
+          target_ratio?: number;
+          current_qty?: number;
+          avg_buy_price?: number;
+          current_price?: number;
+          tolerance_band?: number;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
-      capital_holdings: {
-        Row: Timestamps & {
+      cash_flows: {
+        Row: {
           id: string;
           user_id: string;
-          portfolio_id: string;
-          asset_class: string;
-          symbol: string | null;
-          name: string;
-          target_weight: number;
-          quantity: number;
-          lot_size: number;
-          unit_price: number;
-          market_value: number;
-          price_updated_at: string | null;
+          amount: number;
+          flow_type: CashFlowType;
+          date: string;
+          note: string | null;
+          created_at: string;
         };
-        Insert: Partial<Timestamps> & {
+        Insert: {
           id?: string;
           user_id?: string;
-          portfolio_id: string;
-          asset_class: string;
-          symbol?: string | null;
-          name: string;
-          target_weight?: number;
-          quantity?: number;
-          lot_size?: number;
-          unit_price?: number;
-          price_updated_at?: string | null;
+          amount: number;
+          flow_type: CashFlowType;
+          date?: string;
+          note?: string | null;
+          created_at?: string;
         };
-        Update: Partial<Timestamps> & {
+        Update: {
           id?: string;
           user_id?: string;
-          portfolio_id?: string;
-          asset_class?: string;
-          symbol?: string | null;
-          name?: string;
-          target_weight?: number;
-          quantity?: number;
-          lot_size?: number;
-          unit_price?: number;
-          price_updated_at?: string | null;
+          amount?: number;
+          flow_type?: CashFlowType;
+          date?: string;
+          note?: string | null;
+          created_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "capital_holdings_portfolio_id_fkey";
-            columns: ["portfolio_id"];
-            isOneToOne: false;
-            referencedRelation: "capital_portfolios";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
-      mind_notes: {
-        Row: Timestamps & {
+      capital_settings: {
+        Row: {
+          user_id: string;
+          usd_krw_rate: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          usd_krw_rate?: number;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          usd_krw_rate?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      essays: {
+        Row: {
           id: string;
           user_id: string;
-          kind: "essay" | "memo";
           title: string;
-          body_md: string;
-          paragraphs: Json;
+          content: string;
           tags: string[];
-          written_on: string;
+          created_at: string;
+          updated_at: string;
         };
-        Insert: Partial<Timestamps> & {
+        Insert: {
           id?: string;
           user_id?: string;
-          kind?: "essay" | "memo";
           title: string;
-          body_md?: string;
-          paragraphs?: Json;
+          content?: string;
           tags?: string[];
-          written_on?: string;
+          created_at?: string;
+          updated_at?: string;
         };
-        Update: Partial<Timestamps> & {
+        Update: {
           id?: string;
           user_id?: string;
-          kind?: "essay" | "memo";
           title?: string;
-          body_md?: string;
-          paragraphs?: Json;
+          content?: string;
           tags?: string[];
-          written_on?: string;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
-      body_calisthenics_sets: {
-        Row: Timestamps & {
+      principles: {
+        Row: {
           id: string;
           user_id: string;
-          performed_on: string;
-          exercise: string;
-          set_number: number;
-          weight_kg: number;
-          reps: number;
-          note: string | null;
+          category: PrincipleCategory;
+          rule_text: string;
+          created_at: string;
         };
-        Insert: Partial<Timestamps> & {
+        Insert: {
           id?: string;
           user_id?: string;
-          performed_on?: string;
-          exercise: string;
-          set_number: number;
-          weight_kg?: number;
-          reps: number;
-          note?: string | null;
+          category: PrincipleCategory;
+          rule_text: string;
+          created_at?: string;
         };
-        Update: Partial<Timestamps> & {
+        Update: {
           id?: string;
           user_id?: string;
-          performed_on?: string;
-          exercise?: string;
-          set_number?: number;
-          weight_kg?: number;
+          category?: PrincipleCategory;
+          rule_text?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      workouts: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          exercise_type: string;
+          weight: number;
+          reps: number;
+          sets: number;
+          rpe: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          date?: string;
+          exercise_type: string;
+          weight?: number;
+          reps: number;
+          sets?: number;
+          rpe?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          date?: string;
+          exercise_type?: string;
+          weight?: number;
           reps?: number;
-          note?: string | null;
+          sets?: number;
+          rpe?: number | null;
+          created_at?: string;
         };
         Relationships: [];
       };
-      body_runs: {
-        Row: Timestamps & {
+      runs: {
+        Row: {
           id: string;
           user_id: string;
-          run_on: string;
+          date: string;
           distance_km: number;
-          duration_seconds: number;
-          pace_sec_per_km: number;
+          duration_minutes: number;
+          avg_pace: number;
           avg_heart_rate: number | null;
-          max_heart_rate: number | null;
-          note: string | null;
+          created_at: string;
         };
-        Insert: Partial<Timestamps> & {
+        Insert: {
           id?: string;
           user_id?: string;
-          run_on?: string;
+          date?: string;
           distance_km: number;
-          duration_seconds: number;
+          duration_minutes: number;
           avg_heart_rate?: number | null;
-          max_heart_rate?: number | null;
-          note?: string | null;
+          created_at?: string;
         };
-        Update: Partial<Timestamps> & {
+        Update: {
           id?: string;
           user_id?: string;
-          run_on?: string;
+          date?: string;
           distance_km?: number;
-          duration_seconds?: number;
+          duration_minutes?: number;
           avg_heart_rate?: number | null;
-          max_heart_rate?: number | null;
-          note?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
