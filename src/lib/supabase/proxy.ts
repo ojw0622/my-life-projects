@@ -5,7 +5,7 @@ import type { Database } from "./database.types";
 import { getSupabaseEnv } from "./env";
 
 /** Paths reachable without a session. */
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

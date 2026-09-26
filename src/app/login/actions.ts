@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { failWith, parseForm, type ActionState } from "@/lib/forms";
 import { safeNextPath } from "@/lib/supabase/auth";
+import { authErrorMessage, isConnectionError } from "@/lib/supabase/auth-errors";
 import { createClient } from "@/lib/supabase/server";
 
 const credentialsSchema = z.object({
@@ -13,6 +14,12 @@ const credentialsSchema = z.object({
   password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다."),
   next: z.string().optional(),
 });
+
+/** User-facing message; connection failures are also logged for the deploy logs. */
+function describe(error: Parameters<typeof authErrorMessage>[0]): string {
+  if (isConnectionError(error)) console.error("Supabase auth unreachable:", error.message);
+  return authErrorMessage(error);
+}
 
 export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = parseForm(credentialsSchema, formData);
@@ -23,7 +30,7 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
     email: parsed.data.email,
     password: parsed.data.password,
   });
-  if (error) return failWith({ ok: false, message: "이메일 또는 비밀번호가 올바르지 않습니다." }, formData);
+  if (error) return failWith({ ok: false, message: describe(error) }, formData);
 
   redirect(safeNextPath(parsed.data.next));
 }
@@ -39,7 +46,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     password: parsed.data.password,
     options: { emailRedirectTo: `${origin}/auth/confirm` },
   });
-  if (error) return failWith({ ok: false, message: error.message }, formData);
+  if (error) return failWith({ ok: false, message: describe(error) }, formData);
 
   // With email confirmation disabled Supabase signs the user in right away.
   if (data.session) redirect("/");
