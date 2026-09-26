@@ -28,7 +28,7 @@ export function SpacedReflection({ pick }: { pick: ReflectionPick | null }) {
       <CardContent className="grid gap-3">
         {pick ? (
           <>
-            <Link href={`/mind/${pick.essay.id}`} className="text-lg font-medium hover:underline">
+            <Link href={`/mind/${pick.essay.id}`} className="font-serif text-xl font-semibold hover:underline">
               {pick.essay.title}
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">

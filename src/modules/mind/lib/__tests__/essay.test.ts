@@ -28,6 +28,16 @@ describe("excerpt", () => {
     expect(excerpt("앞 <script>alert(1)</script> <b>뒤</b>")).toBe("앞 alert(1) 뒤");
   });
 
+  it("reads editor HTML, including entities", () => {
+    expect(excerpt("<h2>제목</h2><p>A &amp; B <mark data-color=\"#fdf1b8\">강조</mark></p><ul><li><p>항목</p></li></ul>")).toBe(
+      "제목 A & B 강조 항목",
+    );
+  });
+
+  it("does not split words at inline formatting", () => {
+    expect(excerpt("<p><strong>시간</strong>이 <mark>가장</mark> 큰 자산</p><p>둘째</p>")).toBe("시간이 가장 큰 자산 둘째");
+  });
+
   it("drops fenced code blocks", () => {
     expect(excerpt("앞\n```ts\nconst a = 1;\n```\n뒤")).toBe("앞 뒤");
   });

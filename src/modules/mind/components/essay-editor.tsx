@@ -1,107 +1,207 @@
 "use client";
 
-import { useActionState, useDeferredValue, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { ArrowLeftIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { fieldValue, initialActionState } from "@/lib/forms";
+import { initialActionState, type ActionState } from "@/lib/forms";
 import { cn } from "@/lib/utils";
 
 import { saveEssay } from "../actions";
-import type { EssayRow } from "../lib/essay";
-import { MarkdownView } from "./markdown-view";
+import { parseTags, type EssayRow } from "../lib/essay";
+import { essayStats, toEditorHtml } from "../lib/essay-content";
+import { RichEditor } from "./rich-editor";
 
-type Mode = "split" | "write" | "preview";
+const dateFormat = new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeZone: "Asia/Seoul" });
 
-export function EssayEditor({ essay }: { essay?: EssayRow }) {
-  const [state, action, pending] = useActionState(saveEssay, initialActionState);
-  const [content, setContent] = useState(essay?.content ?? "");
-  const [mode, setMode] = useState<Mode>("split");
-  const preview = useDeferredValue(content);
-  const e = state.fieldErrors ?? {};
-  const words = content.trim() === "" ? 0 : content.trim().split(/\s+/).length;
+export function EssayEditor({ essay, actions }: { essay?: EssayRow; actions?: React.ReactNode }) {
+  const initialHtml = useMemo(() => toEditorHtml(essay?.content ?? ""), [essay?.content]);
+  const [title, setTitle] = useState(essay?.title ?? "");
+  const [tags, setTags] = useState<string[]>(essay?.tags ?? []);
+  const [html, setHtml] = useState(initialHtml);
+  const [text, setText] = useState("");
+  const [saved, setSaved] = useState(() => snapshot(essay?.title ?? "", essay?.tags ?? [], initialHtml));
+  const [result, setResult] = useState<ActionState>(initialActionState);
+  const [pending, startTransition] = useTransition();
+
+  const dirty = snapshot(title, tags, html) !== saved;
+  const stats = essayStats(text);
+
+  function save() {
+    if (pending) return;
+    const formData = new FormData();
+    if (essay) formData.set("id", essay.id);
+    formData.set("title", title);
+    formData.set("content", html);
+    formData.set("tags", tags.join(","));
+    const current = snapshot(title, tags, html);
+    startTransition(async () => {
+      const next = await saveEssay(initialActionState, formData);
+      setResult(next);
+      if (next.ok) setSaved(current);
+    });
+  }
+
+  // Ctrl/Cmd+S saves; leaving with unsaved changes asks first.
+  const saveRef = useRef(save);
+  useEffect(() => {
+    saveRef.current = save;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    if (!dirty) return;
+    const onLeave = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, [dirty]);
+
+  const titleError = result.fieldErrors?.title;
+  const status = pending
+    ? "저장 중…"
+    : !result.ok && result.message
+      ? result.message
+      : dirty
+        ? "저장하지 않은 변경 사항"
+        : essay || result.ok
+          ? "모두 저장됨"
+          : "";
 
   return (
-    <form action={action} className="grid gap-4">
-      {essay ? <input type="hidden" name="id" value={essay.id} /> : null}
-      <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-        <FormField id="title" label="제목" error={e.title}>
-          <Input name="title" defaultValue={fieldValue(state, "title", essay?.title)} placeholder="오늘의 생각" required maxLength={200} />
-        </FormField>
-        <FormField id="tags" label="태그" error={e.tags} hint="쉼표로 구분">
-          <Input name="tags" defaultValue={fieldValue(state, "tags", essay?.tags.join(", "))} placeholder="투자, 삶" />
-        </FormField>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div role="tablist" aria-label="편집 모드" className="bg-muted inline-flex rounded-md p-0.5 text-sm">
-          {(
-            [
-              ["split", "나란히"],
-              ["write", "쓰기"],
-              ["preview", "미리보기"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={mode === value}
-              onClick={() => setMode(value)}
-              className={cn(
-                "rounded px-3 py-1 transition-colors",
-                mode === value ? "bg-background shadow-xs" : "text-muted-foreground",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {content.length.toLocaleString("ko-KR")}자 · {words.toLocaleString("ko-KR")}단어
-        </span>
-      </div>
-
-      <div className={cn("grid gap-4", mode === "split" && "lg:grid-cols-2")}>
-        <div className={cn(mode === "preview" && "hidden")}>
-          <label htmlFor="content" className="sr-only">
-            본문 (Markdown)
-          </label>
-          <Textarea
-            id="content"
-            name="content"
-            value={content}
-            onChange={(ev) => setContent(ev.target.value)}
-            placeholder={"# 제목\n\n마크다운으로 작성하세요. **굵게**, - 목록, > 인용"}
-            className="min-h-[28rem] font-mono text-sm leading-relaxed"
-            aria-invalid={e.content ? true : undefined}
-          />
-          {e.content ? <p className="text-destructive mt-1 text-xs">{e.content}</p> : null}
-        </div>
-        <div
-          aria-label="미리보기"
-          className={cn("min-h-[28rem] rounded-md border p-4", mode === "write" && "hidden")}
+    <article className="mx-auto grid w-full max-w-3xl gap-6">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/mind"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
         >
-          {preview.trim() ? (
-            <MarkdownView content={preview} />
-          ) : (
-            <p className="text-muted-foreground text-sm">미리보기가 여기에 표시됩니다.</p>
-          )}
+          <ArrowLeftIcon className="size-4" /> 사유
+        </Link>
+        <div className="flex items-center gap-2">
+          <span
+            role="status"
+            className={cn(
+              "text-xs transition-colors",
+              !result.ok && result.message ? "text-destructive" : "text-muted-foreground",
+            )}
+          >
+            {status}
+          </span>
+          {actions}
+          <Button size="sm" onClick={save} disabled={pending || (!dirty && !!essay)}>
+            저장
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3">
-        {state.message ? (
-          <p role="status" className={state.ok ? "text-muted-foreground text-sm" : "text-destructive text-sm"}>
-            {state.message}
-          </p>
-        ) : null}
-        <Button type="submit" disabled={pending}>
-          {pending ? "저장 중…" : "저장"}
-        </Button>
-      </div>
-    </form>
+      <header className="grid gap-3">
+        <textarea
+          value={title}
+          onChange={(e) => setTitle(e.target.value.replace(/\n/g, ""))}
+          onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+          placeholder="제목 없음"
+          aria-label="제목"
+          aria-invalid={titleError ? true : undefined}
+          rows={1}
+          maxLength={200}
+          className="field-sizing-content font-serif placeholder:text-muted-foreground/50 w-full resize-none bg-transparent text-3xl leading-tight font-semibold tracking-tight outline-none sm:text-4xl"
+        />
+        {titleError ? <p className="text-destructive text-sm">{titleError}</p> : null}
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+          <span>{dateFormat.format(essay ? new Date(essay.created_at) : new Date())}</span>
+          <span aria-hidden>·</span>
+          <span className="tabular-nums">
+            {stats.characters.toLocaleString("ko-KR")}자{stats.minutes > 0 ? ` · 약 ${stats.minutes}분` : ""}
+          </span>
+          <span aria-hidden>·</span>
+          <TagInput tags={tags} onChange={setTags} />
+        </div>
+      </header>
+
+      <RichEditor
+        initialHtml={initialHtml}
+        onReady={(change) => {
+          setHtml(change.html);
+          setText(change.text);
+          setSaved(snapshot(title, tags, change.html));
+        }}
+        onChange={(change) => {
+          setHtml(change.html);
+          setText(change.text);
+        }}
+      />
+
+      <p className="text-muted-foreground/80 border-t pt-4 text-xs leading-relaxed">
+        빠르게 쓰기: <Kbd># </Kbd> 제목 · <Kbd>- </Kbd> 목록 · <Kbd>[] </Kbd> 체크리스트 · <Kbd>&gt; </Kbd> 인용 ·{" "}
+        <Kbd>==글자==</Kbd> 형광펜 · 글자를 드래그하면 서식 메뉴 · <Kbd>Ctrl+S</Kbd> 저장
+      </p>
+    </article>
   );
+}
+
+function snapshot(title: string, tags: string[], html: string): string {
+  return JSON.stringify([title.trim(), tags, html]);
+}
+
+function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+
+  function commit(value: string) {
+    const next = parseTags([...tags, value].join(","));
+    if (next.length !== tags.length) onChange(next);
+    setDraft("");
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-full py-0.5 pr-1 pl-2.5 text-xs"
+        >
+          #{tag}
+          <button
+            type="button"
+            aria-label={`${tag} 태그 삭제`}
+            className="hover:bg-foreground/10 rounded-full p-0.5"
+            onClick={() => onChange(tags.filter((t) => t !== tag))}
+          >
+            <XIcon className="size-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v.endsWith(",")) commit(v.slice(0, -1));
+          else setDraft(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            commit(draft);
+          } else if (e.key === "Backspace" && draft === "" && tags.length > 0) {
+            onChange(tags.slice(0, -1));
+          }
+        }}
+        onBlur={() => draft.trim() && commit(draft)}
+        placeholder={tags.length === 0 ? "+ 태그 추가" : "+"}
+        aria-label="태그 추가 (Enter)"
+        className="placeholder:text-muted-foreground/70 w-24 bg-transparent text-sm outline-none"
+      />
+    </div>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return <kbd className="bg-muted rounded px-1 py-px font-mono text-[11px]">{children}</kbd>;
 }

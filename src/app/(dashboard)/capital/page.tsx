@@ -1,6 +1,7 @@
 import { PlusIcon } from "lucide-react";
 
 import { DeleteButton } from "@/components/delete-button";
+import { PageHeader } from "@/components/page-header";
 import { Stat } from "@/components/stat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,13 +28,12 @@ export default async function CapitalPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">자본</h1>
-          <p className="text-muted-foreground text-sm">목표 비중 대비 괴리와 신규 현금 배분</p>
-        </div>
-        <FxRateForm usdKrwRate={usdKrwRate} />
-      </div>
+      <PageHeader
+        eyebrow="Capital"
+        title="자본"
+        description="목표 비중 대비 괴리와 신규 현금 배분"
+        actions={<FxRateForm usdKrwRate={usdKrwRate} />}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="총 평가액" value={formatMoney(view.totalValueKrw)} />

@@ -12,16 +12,24 @@ export function parseTags(input: string): string[] {
   return [...new Set(tags)].slice(0, 20);
 }
 
-/** Plain-text preview of Markdown, cut at a word boundary. */
+/** Plain-text preview of an essay (HTML or legacy Markdown), cut at a word boundary. */
 export function excerpt(markdown: string, maxLength = 160): string {
   const text = markdown
     .replace(/```[\s\S]*?```/g, " ")
+    // Inline tags join their text; block tags separate words.
+    .replace(/<\/?(strong|b|em|i|u|s|mark|a|code|span|label)\b[^>]*>/gi, "")
     .replace(/<[^>]*>/g, " ")
     .replace(/`([^`]*)`/g, "$1")
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
     .replace(/(\*\*|__|\*|_|~~)(.+?)\1/g, "$2")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
 

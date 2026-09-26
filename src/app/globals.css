@@ -7,7 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans), var(--font-plex-kr), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-kr), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -36,25 +37,26 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 0.75rem;
+  /* Warm paper background, white cards, deep ink text. */
+  --background: oklch(0.984 0.004 85);
+  --foreground: oklch(0.21 0.014 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.21 0.014 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.21 0.014 260);
+  --primary: oklch(0.25 0.03 262);
+  --primary-foreground: oklch(0.985 0.003 85);
+  --secondary: oklch(0.955 0.006 85);
+  --secondary-foreground: oklch(0.25 0.02 260);
+  --muted: oklch(0.955 0.006 85);
+  --muted-foreground: oklch(0.52 0.012 260);
+  --accent: oklch(0.945 0.007 85);
+  --accent-foreground: oklch(0.21 0.014 260);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.91 0.007 85);
+  --input: oklch(0.89 0.008 85);
+  --ring: oklch(0.6 0.03 262);
   --good: #0ca30c;
   --warning: #fab219;
   --critical: #d03b3b;
@@ -92,5 +94,148 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+    word-break: keep-all;
   }
+  ::selection {
+    background: oklch(0.88 0.06 262 / 0.6);
+  }
+}
+
+/* ---------- Motion: quiet entrance for page sections ---------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger > * {
+  animation: rise 0.55s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.stagger > *:nth-child(2) { animation-delay: 0.05s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.15s; }
+.stagger > *:nth-child(5) { animation-delay: 0.2s; }
+.stagger > *:nth-child(n + 6) { animation-delay: 0.25s; }
+
+/* Cards that are links lift slightly on hover. */
+.card-lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 0.8, 0.3, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.84 0.01 85);
+  box-shadow:
+    0 1px 2px oklch(0.2 0.02 260 / 0.04),
+    0 12px 28px -12px oklch(0.2 0.02 260 / 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > * {
+    animation: none;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Essay editor typography ---------- */
+
+.essay-prose {
+  font-family: var(--font-serif);
+  font-size: 1.075rem;
+  line-height: 1.95;
+  color: var(--foreground);
+  outline: none;
+  min-height: 50vh;
+}
+.essay-prose > * + * {
+  margin-top: 0.85em;
+}
+.essay-prose :is(h1, h2, h3) {
+  font-family: var(--font-sans);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  margin-top: 1.6em;
+}
+.essay-prose h1 { font-size: 1.6rem; }
+.essay-prose h2 { font-size: 1.3rem; }
+.essay-prose h3 { font-size: 1.1rem; }
+.essay-prose > :first-child { margin-top: 0; }
+.essay-prose ul { list-style: disc; padding-left: 1.4em; }
+.essay-prose ol { list-style: decimal; padding-left: 1.4em; }
+.essay-prose li > p { margin: 0; }
+.essay-prose li + li { margin-top: 0.25em; }
+.essay-prose ul[data-type="taskList"] { list-style: none; padding-left: 0.1em; }
+.essay-prose ul[data-type="taskList"] li { display: flex; gap: 0.6em; align-items: flex-start; }
+.essay-prose ul[data-type="taskList"] li > label { margin-top: 0.42em; user-select: none; }
+.essay-prose ul[data-type="taskList"] li > div { flex: 1; }
+.essay-prose ul[data-type="taskList"] input[type="checkbox"] {
+  width: 1.05em;
+  height: 1.05em;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.essay-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+  text-decoration-color: oklch(0.6 0.01 260 / 0.6);
+}
+.essay-prose blockquote {
+  border-left: 3px solid oklch(0.82 0.02 262);
+  padding: 0.1em 0 0.1em 1.1em;
+  color: oklch(0.42 0.015 260);
+}
+.essay-prose pre {
+  background: var(--muted);
+  border-radius: 0.6rem;
+  padding: 0.9em 1.1em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.essay-prose :not(pre) > code {
+  background: var(--muted);
+  border-radius: 0.3em;
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.essay-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.2em auto;
+  width: 30%;
+}
+.essay-prose mark {
+  background-color: #fdf0b0;
+  color: inherit;
+  border-radius: 0.2em;
+  padding: 0.05em 0.12em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.essay-prose a {
+  color: oklch(0.45 0.12 262);
+  text-decoration: underline;
+  text-decoration-color: oklch(0.45 0.12 262 / 0.35);
+  text-underline-offset: 3px;
+}
+.essay-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: oklch(0.52 0.012 260 / 0.55);
 }

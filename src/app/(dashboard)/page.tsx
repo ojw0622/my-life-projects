@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "lucide-react";
 
+import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { todayIn } from "@/lib/date";
 import { WeeklyMileageCard } from "@/modules/body/components/weekly-mileage-card";
@@ -13,6 +14,21 @@ import { getCapitalData } from "@/modules/capital/queries";
 import { SpacedReflection } from "@/modules/mind/components/spaced-reflection";
 import { pickReflection } from "@/modules/mind/lib/essay";
 import { getReflectionCandidates } from "@/modules/mind/queries";
+
+const longDate = new Intl.DateTimeFormat("ko-KR", {
+  month: "long",
+  day: "numeric",
+  weekday: "long",
+  timeZone: "Asia/Seoul",
+});
+
+function greeting(now: Date): string {
+  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: "Asia/Seoul" }).format(now));
+  if (hour < 5) return "늦은 밤이에요";
+  if (hour < 12) return "좋은 아침이에요";
+  if (hour < 18) return "좋은 오후예요";
+  return "좋은 저녁이에요";
+}
 
 export default async function Home() {
   const now = new Date();
@@ -29,10 +45,7 @@ export default async function Home() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">오늘</h1>
-        <p className="text-muted-foreground text-sm">{today}</p>
-      </div>
+      <PageHeader eyebrow={longDate.format(now)} title={greeting(now)} description="오늘의 자본 · 사유 · 신체" />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -85,7 +98,7 @@ function ModuleCard({
 }) {
   return (
     <Link href={href} className="group">
-      <Card className="group-hover:border-foreground/30 h-full transition-colors">
+      <Card className="card-lift h-full">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             {title}
