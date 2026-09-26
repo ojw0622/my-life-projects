@@ -10,6 +10,8 @@ export const REQUIRED_TABLES = [
   "portfolios",
   "cash_flows",
   "capital_settings",
+  "cash_flow_plans",
+  "portfolio_snapshots",
   "essays",
   "principles",
   "workouts",

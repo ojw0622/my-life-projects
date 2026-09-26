@@ -26,7 +26,7 @@ export function WeightChart({ data }: { data: WeightDatum[] }) {
     .join("; ");
 
   return (
-    <figure className="grid gap-3">
+    <figure className="grid min-w-0 gap-3">
       <figcaption className="flex flex-wrap items-center gap-4 text-xs">
         <span className="text-muted-foreground">현재 비중 vs 목표 비중</span>
         <span className="flex items-center gap-1.5">

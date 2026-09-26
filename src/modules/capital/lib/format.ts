@@ -23,3 +23,31 @@ export function formatPercentPoint(fraction: number, digits = 1): string {
 export function formatQuantity(quantity: number): string {
   return quantity.toLocaleString("ko-KR", { maximumFractionDigits: 8 });
 }
+
+/** Signed money, e.g. +₩12,000 / -₩3,000. */
+export function formatSignedMoney(value: number, currency: Currency = "KRW"): string {
+  const rounded = currency === "USD" ? Math.round(value * 100) / 100 : Math.round(value);
+  if (rounded === 0) return formatMoney(0, currency);
+  return `${rounded > 0 ? "+" : "-"}${formatMoney(Math.abs(rounded), currency)}`;
+}
+
+/** Signed percentage, e.g. 0.0123 → "+1.23%". */
+export function formatSignedPercent(fraction: number, digits = 2): string {
+  const value = (fraction * 100).toFixed(digits);
+  if (Number(value) === 0) return `${(0).toFixed(digits)}%`;
+  return `${fraction > 0 ? "+" : ""}${value}%`;
+}
+
+const timeFormat = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** "9. 26. 14:05" style timestamp in Korea time. */
+export function formatUpdatedAt(iso: string): string {
+  return timeFormat.format(new Date(iso));
+}

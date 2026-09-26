@@ -1,8 +1,9 @@
 -- =====================================================================
--- My Life Dashboard — Supabase schema (v2)
+-- My Life Dashboard — Supabase schema (v3)
 --
 -- Modules
---   * Capital : portfolios, cash_flows, capital_settings
+--   * Capital : portfolios, cash_flows, capital_settings,
+--               cash_flow_plans, portfolio_snapshots
 --   * Mind    : essays, principles
 --   * Body    : workouts, runs
 --   * Tower   : tower_docs (지원 관제탑, document store)
@@ -73,6 +74,59 @@ create table if not exists public.capital_settings (
   user_id      uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   usd_krw_rate numeric(12, 4) not null default 1400 check (usd_krw_rate > 0),
   updated_at   timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- Capital v3: live prices, monthly plans, value history
+-- (added with `if not exists` so re-running on an existing database is safe)
+-- ---------------------------------------------------------------------
+
+-- Live prices: which assets follow the market, the quote symbol override,
+-- the previous close (for daily change) and when the price was fetched.
+alter table public.portfolios add column if not exists auto_price boolean not null default true;
+alter table public.portfolios add column if not exists quote_symbol text
+  check (quote_symbol is null or char_length(quote_symbol) between 1 and 30);
+alter table public.portfolios add column if not exists prev_close numeric(20, 4)
+  check (prev_close is null or prev_close >= 0);
+alter table public.portfolios add column if not exists price_updated_at timestamptz;
+
+alter table public.capital_settings add column if not exists auto_fx boolean not null default true;
+alter table public.capital_settings add column if not exists fx_updated_at timestamptz;
+
+-- 매달 정기 입금 (저축 / 배당).
+create table if not exists public.cash_flow_plans (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  flow_type    text not null check (flow_type in ('saving', 'dividend')),
+  amount       numeric(20, 2) not null check (amount > 0),
+  day_of_month smallint not null default 25 check (day_of_month between 1 and 28),
+  asset_id     uuid references public.portfolios (id) on delete set null,
+  note         text check (note is null or char_length(note) <= 200),
+  active       boolean not null default true,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists cash_flow_plans_user_idx on public.cash_flow_plans (user_id);
+
+-- Each record may come from a plan (at most once per month) and a dividend
+-- may name the asset that paid it.
+alter table public.cash_flows add column if not exists plan_id uuid
+  references public.cash_flow_plans (id) on delete set null;
+alter table public.cash_flows add column if not exists asset_id uuid
+  references public.portfolios (id) on delete set null;
+
+create unique index if not exists cash_flows_plan_month_uniq
+  on public.cash_flows (plan_id, (date_trunc('month', date::timestamp)))
+  where plan_id is not null;
+
+-- One total per day, written whenever prices are refreshed.
+create table if not exists public.portfolio_snapshots (
+  user_id          uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  date             date not null,
+  total_value_krw  numeric(24, 2) not null check (total_value_krw >= 0),
+  invested_krw     numeric(24, 2) not null default 0 check (invested_krw >= 0),
+  updated_at       timestamptz not null default now(),
+  primary key (user_id, date)
 );
 
 -- =====================================================================
@@ -200,6 +254,8 @@ begin
     'portfolios',
     'cash_flows',
     'capital_settings',
+    'cash_flow_plans',
+    'portfolio_snapshots',
     'essays',
     'principles',
     'workouts',

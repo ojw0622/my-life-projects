@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 import { deleteAsset } from "../actions";
 import { CATEGORY_LABELS } from "../lib/constants";
-import { formatMoney, formatPercent, formatQuantity } from "../lib/format";
+import { formatMoney, formatPercent, formatQuantity, formatSignedMoney, formatUpdatedAt } from "../lib/format";
 import type { PortfolioView } from "../lib/portfolio";
 import { AssetFormDialog } from "./asset-form-dialog";
+import { ChangeText } from "./change-text";
 import { DriftBadge } from "./drift-badge";
 
 export function AssetTable({ view }: { view: PortfolioView }) {
@@ -37,7 +38,7 @@ export function AssetTable({ view }: { view: PortfolioView }) {
           <TableHead className="text-right">수량</TableHead>
           <TableHead className="text-right">현재가</TableHead>
           <TableHead className="text-right">평가액 (KRW)</TableHead>
-          <TableHead className="text-right">수익률</TableHead>
+          <TableHead className="text-right">평가손익</TableHead>
           <TableHead className="text-right">현재 비중</TableHead>
           <TableHead className="text-right">목표 비중</TableHead>
           <TableHead className="text-right">괴리</TableHead>
@@ -56,15 +57,33 @@ export function AssetTable({ view }: { view: PortfolioView }) {
                   <span className="font-medium">{row.asset_name}</span>
                   {row.ticker ? <span className="text-muted-foreground text-xs">{row.ticker}</span> : null}
                   <Badge variant="outline">{CATEGORY_LABELS[row.category]}</Badge>
+                  {!row.auto_price && row.category !== "cash" ? (
+                    <Badge variant="secondary" title="현재가를 직접 입력하는 자산">
+                      수동
+                    </Badge>
+                  ) : null}
                 </div>
               </TableCell>
               <TableCell className="text-right tabular-nums">{formatQuantity(Number(row.current_qty))}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatMoney(Number(row.current_price), row.currency)}
+              <TableCell className="text-right">
+                <div
+                  className="tabular-nums"
+                  title={row.price_updated_at ? `${formatUpdatedAt(row.price_updated_at)} 갱신` : undefined}
+                >
+                  {formatMoney(Number(row.current_price), row.currency)}
+                </div>
+                {item.dayChange !== null ? <ChangeText rate={item.dayChange} className="text-xs" /> : null}
               </TableCell>
               <TableCell className="text-right tabular-nums">{formatMoney(item.valueKrw)}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {item.returnRate === null ? "–" : `${item.returnRate > 0 ? "+" : ""}${formatPercent(item.returnRate)}`}
+              <TableCell className="text-right">
+                {item.returnRate === null || item.pnlKrw === null ? (
+                  <span className="text-muted-foreground">–</span>
+                ) : (
+                  <>
+                    <div className="tabular-nums">{formatSignedMoney(item.pnlKrw)}</div>
+                    <ChangeText rate={item.returnRate} className="text-xs" />
+                  </>
+                )}
               </TableCell>
               <TableCell className="text-right tabular-nums">{formatPercent(item.currentWeight)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatPercent(item.targetWeight)}</TableCell>
@@ -92,7 +111,14 @@ export function AssetTable({ view }: { view: PortfolioView }) {
         <TableRow>
           <TableCell colSpan={3}>합계</TableCell>
           <TableCell className="text-right tabular-nums">{formatMoney(view.totalValueKrw)}</TableCell>
-          <TableCell />
+          <TableCell className="text-right">
+            {view.totalPnlRate === null ? null : (
+              <>
+                <div className="tabular-nums">{formatSignedMoney(view.totalPnlKrw)}</div>
+                <ChangeText rate={view.totalPnlRate} className="text-xs" />
+              </>
+            )}
+          </TableCell>
           <TableCell className="text-right tabular-nums">{view.totalValueKrw > 0 ? "100.0%" : "–"}</TableCell>
           <TableCell className={cn("text-right tabular-nums", !view.targetsValid && "text-destructive")}>
             {formatPercent(view.targetSum, 2)}
