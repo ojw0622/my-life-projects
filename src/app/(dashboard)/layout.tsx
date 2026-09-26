@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <SiteHeader email={user.email} />
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
+      <main className="stagger mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:py-10">
         {missing.length > 0 ? <SetupRequired missing={missing} /> : children}
       </main>
     </>

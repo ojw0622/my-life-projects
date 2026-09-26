@@ -1,4 +1,5 @@
 import { DeleteButton } from "@/components/delete-button";
+import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { todayIn, weekdayLabel } from "@/lib/date";
 import { deleteRun, deleteWorkout } from "@/modules/body/actions";
@@ -21,10 +22,7 @@ export default async function BodyPage() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">신체</h1>
-        <p className="text-muted-foreground text-sm">맨몸운동과 러닝</p>
-      </div>
+      <PageHeader eyebrow="Body" title="신체" description="맨몸운동과 러닝" />
 
       <Card>
         <CardHeader>

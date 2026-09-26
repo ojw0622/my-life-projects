@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
 import { DeleteButton } from "@/components/delete-button";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,17 +21,18 @@ export default async function MindPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">사유</h1>
-          <p className="text-muted-foreground text-sm">에세이와 원칙</p>
-        </div>
-        <Button asChild>
-          <Link href="/mind/new">
-            <PlusIcon /> 새 글
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Mind"
+        title="사유"
+        description="에세이와 원칙"
+        actions={
+          <Button asChild>
+            <Link href="/mind/new">
+              <PlusIcon /> 새 글
+            </Link>
+          </Button>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <section aria-labelledby="essays-heading" className="grid content-start gap-3">
@@ -38,19 +40,23 @@ export default async function MindPage() {
             에세이 {essays.length}편
           </h2>
           {essays.length === 0 ? (
-            <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-              아직 쓴 글이 없습니다.
-            </p>
+            <Link
+              href="/mind/new"
+              className="card-lift text-muted-foreground bg-card/50 grid place-items-center gap-1 rounded-xl border border-dashed p-10 text-center text-sm"
+            >
+              <span className="font-serif text-foreground text-lg">첫 글을 써 볼까요?</span>
+              오늘 떠오른 생각 한 줄이면 충분합니다.
+            </Link>
           ) : (
             essays.map((essay) => (
               <Link key={essay.id} href={`/mind/${essay.id}`} className="group">
-                <Card className="group-hover:border-foreground/30 gap-2 py-4 transition-colors">
+                <Card className="card-lift gap-2 py-5">
                   <CardHeader>
-                    <CardTitle>{essay.title}</CardTitle>
-                    <CardDescription>{dateFormat.format(new Date(essay.created_at))}</CardDescription>
+                    <CardDescription className="text-xs">{dateFormat.format(new Date(essay.created_at))}</CardDescription>
+                    <CardTitle className="font-serif text-lg leading-snug">{essay.title}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid gap-2">
-                    <p className="text-muted-foreground line-clamp-2 text-sm">{excerpt(essay.content)}</p>
+                  <CardContent className="grid gap-3">
+                    <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">{excerpt(essay.content)}</p>
                     {essay.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {essay.tags.map((t) => (
