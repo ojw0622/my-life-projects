@@ -29,6 +29,7 @@ v1 스키마 테이블(`capital_portfolios` 등)은 자동으로 지우지 않�
 | `/mind` | 에세이 목록, 원칙(투자/삶/신체) |
 | `/mind/new`, `/mind/[id]` | 마크다운 에디터 + 실시간 미리보기 |
 | `/body` | 맨몸운동 빠른 입력(볼륨 자동 계산), 러닝 입력(페이스 자동 계산), 주간 마일리지 |
+| `/tower` | 지원 관제탑 (항목·일정·시간 기록·로드맵). 처음 열면 `data-snapshot.json` 가져오기 버튼 |
 
 ## 스크립트
 
@@ -73,3 +74,10 @@ supabase/schema.sql     DB 스키마 + RLS
   3. 이번 배분에서 산 lot을 되돌려 더 큰 lot을 사는 편이 나으면 교체 (기존 보유분은 절대 매도하지 않음)
 
   `lotSize`로 소수점 매수(예: 0.0001 BTC)를 지원합니다.
+
+## 관제탑 (`/tower`)
+
+claude.ai Artifact로 만든 단일 파일 페이지(`public/tower/app.html`)를 코드 수정 없이 iframe으로 띄웁니다.
+원래 코드가 쓰던 `claude.use("db")`(Firestore 모양의 문서 저장소)는 부모 페이지가
+`src/modules/tower/lib/doc-store.ts`로 제공하며, 데이터는 Supabase `tower_docs` 테이블(컬렉션·문서 id·JSON)에 저장됩니다.
+Supabase Realtime이 켜져 있으면 다른 기기·탭의 변경도 바로 반영됩니다.

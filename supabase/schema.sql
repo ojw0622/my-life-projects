@@ -5,6 +5,7 @@
 --   * Capital : portfolios, cash_flows, capital_settings
 --   * Mind    : essays, principles
 --   * Body    : workouts, runs
+--   * Tower   : tower_docs (지원 관제탑, document store)
 --
 -- Every table carries a user_id (defaults to auth.uid()) and has Row Level
 -- Security enabled with owner-only policies: a signed-in user can only
@@ -138,6 +139,36 @@ create table if not exists public.runs (
 create index if not exists runs_user_date_idx on public.runs (user_id, date desc);
 
 -- =====================================================================
+-- Tower module (지원 관제탑)
+--
+-- The Control Tower page was written against a Firestore-style document
+-- store, so its data is kept as JSON documents: one row per
+-- (collection, doc_id), e.g. ('items', 'hanneung') or ('config', 'budget').
+-- =====================================================================
+
+create table if not exists public.tower_docs (
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  collection text not null check (collection ~ '^[A-Za-z0-9_-]{1,100}$'),
+  doc_id     text not null check (char_length(doc_id) between 1 and 200 and position('/' in doc_id) = 0),
+  data       jsonb not null default '{}'::jsonb check (jsonb_typeof(data) = 'object'),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, collection, doc_id)
+);
+
+-- Live updates across tabs/devices (Supabase Realtime), when available.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'tower_docs'
+     ) then
+    alter publication supabase_realtime add table public.tower_docs;
+  end if;
+end;
+$$;
+
+-- =====================================================================
 -- updated_at triggers
 -- =====================================================================
 
@@ -172,7 +203,8 @@ begin
     'essays',
     'principles',
     'workouts',
-    'runs'
+    'runs',
+    'tower_docs'
   ]
   loop
     execute format('alter table public.%I enable row level security', t);

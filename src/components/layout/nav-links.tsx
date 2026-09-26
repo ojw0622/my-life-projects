@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/capital", label: "자본" },
   { href: "/mind", label: "사유" },
   { href: "/body", label: "신체" },
+  { href: "/tower", label: "관제탑" },
 ] as const;
 
 export function NavLinks() {

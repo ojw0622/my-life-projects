@@ -246,6 +246,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      tower_docs: {
+        Row: {
+          user_id: string;
+          collection: string;
+          doc_id: string;
+          data: Json;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          collection: string;
+          doc_id: string;
+          data?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          collection?: string;
+          doc_id?: string;
+          data?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
