@@ -4,6 +4,7 @@ import { allocateCash, CapitalEngineError, type Holding } from "../engine";
 import { buildDriftReport } from "../engine/drift";
 import { WEIGHT_SUM_TOLERANCE } from "../engine/validation";
 import { lotSizeFor, quantityUnit } from "./constants";
+import { dailyChange } from "./quotes";
 
 export type PortfolioRow = Tables<"portfolios">;
 
@@ -24,6 +25,14 @@ export interface PortfolioViewItem {
   outOfBand: boolean;
   /** Unrealised return vs average buy price, or null without a buy price. */
   returnRate: number | null;
+  /** Cost basis (qty × average buy price) in KRW, or 0 without a buy price. */
+  costKrw: number;
+  /** valueKrw − costKrw, or null without a buy price. */
+  pnlKrw: number | null;
+  /** Change since the previous close as a fraction, or null when unknown. */
+  dayChange: number | null;
+  /** Value change since the previous close in KRW (0 when unknown). */
+  dayChangeKrw: number;
 }
 
 export interface PortfolioView {
@@ -33,6 +42,14 @@ export interface PortfolioView {
   /** Target ratios sum to 100% (required by the allocation engine). */
   targetsValid: boolean;
   outOfBandCount: number;
+  /** Cost basis of the assets that have a buy price. */
+  totalCostKrw: number;
+  /** Unrealised P/L over the assets that have a buy price. */
+  totalPnlKrw: number;
+  totalPnlRate: number | null;
+  /** Value change since the previous close across all assets. */
+  dayChangeKrw: number;
+  dayChangeRate: number | null;
 }
 
 /**
@@ -57,6 +74,12 @@ export function buildPortfolioView(rows: readonly PortfolioRow[], usdKrwRate: nu
   const items = priced.map(({ row, priceKrw }, i) => {
     const drift = report.items[i];
     const avgBuy = Number(row.avg_buy_price);
+    const qty = Number(row.current_qty);
+    const price = Number(row.current_price);
+    const costKrw = avgBuy > 0 ? toKrw(qty * avgBuy, row.currency, usdKrwRate) : 0;
+    const dayChange = dailyChange(price, row.prev_close === null ? null : Number(row.prev_close));
+    const dayChangeKrw =
+      dayChange === null ? 0 : toKrw(qty * (price - Number(row.prev_close)), row.currency, usdKrwRate);
     return {
       row,
       priceKrw,
@@ -65,11 +88,20 @@ export function buildPortfolioView(rows: readonly PortfolioRow[], usdKrwRate: nu
       targetWeight: drift.targetWeight,
       drift: drift.drift,
       outOfBand: report.totalValue > 0 && Math.abs(drift.drift) > Number(row.tolerance_band) + 1e-12,
-      returnRate: avgBuy > 0 ? Number(row.current_price) / avgBuy - 1 : null,
+      returnRate: avgBuy > 0 ? price / avgBuy - 1 : null,
+      costKrw,
+      pnlKrw: avgBuy > 0 ? drift.marketValue - costKrw : null,
+      dayChange,
+      dayChangeKrw,
     };
   });
 
   const targetSum = rows.reduce((sum, r) => sum + Number(r.target_ratio), 0);
+  const withCost = items.filter((i) => i.pnlKrw !== null);
+  const totalCostKrw = withCost.reduce((s, i) => s + i.costKrw, 0);
+  const totalPnlKrw = withCost.reduce((s, i) => s + (i.pnlKrw ?? 0), 0);
+  const dayChangeKrw = items.reduce((s, i) => s + i.dayChangeKrw, 0);
+  const previousTotal = report.totalValue - dayChangeKrw;
 
   return {
     items,
@@ -77,6 +109,11 @@ export function buildPortfolioView(rows: readonly PortfolioRow[], usdKrwRate: nu
     targetSum,
     targetsValid: rows.length > 0 && Math.abs(targetSum - 1) <= WEIGHT_SUM_TOLERANCE,
     outOfBandCount: items.filter((i) => i.outOfBand).length,
+    totalCostKrw,
+    totalPnlKrw,
+    totalPnlRate: totalCostKrw > 0 ? totalPnlKrw / totalCostKrw : null,
+    dayChangeKrw,
+    dayChangeRate: items.some((i) => i.dayChange !== null) && previousTotal > 0 ? dayChangeKrw / previousTotal : null,
   };
 }
 

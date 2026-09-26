@@ -21,12 +21,12 @@ function parseAmount(text: string): number {
 export function RebalanceCalculator({
   rows,
   usdKrwRate,
-  recentInflowKrw,
+  quickAmounts,
 }: {
   rows: PortfolioRow[];
   usdKrwRate: number;
-  /** Savings + dividends of the last 30 days, offered as a one-click amount. */
-  recentInflowKrw: number;
+  /** Recent inflows (this month, last 30 days…) offered as one-click amounts. */
+  quickAmounts: { label: string; amount: number }[];
 }) {
   const [input, setInput] = useState("");
   const cash = parseAmount(input);
@@ -62,11 +62,13 @@ export function RebalanceCalculator({
               +{amount / 10_000}만
             </Button>
           ))}
-          {recentInflowKrw > 0 ? (
-            <Button type="button" variant="secondary" size="sm" onClick={() => setAmount(recentInflowKrw)}>
-              최근 30일 입금 {formatMoney(recentInflowKrw)}
-            </Button>
-          ) : null}
+          {quickAmounts
+            .filter((q) => q.amount > 0)
+            .map((q) => (
+              <Button key={q.label} type="button" variant="secondary" size="sm" onClick={() => setAmount(q.amount)}>
+                {q.label} {formatMoney(q.amount)}
+              </Button>
+            ))}
         </div>
       </div>
 

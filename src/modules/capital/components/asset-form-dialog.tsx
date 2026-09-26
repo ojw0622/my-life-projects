@@ -82,8 +82,8 @@ function AssetForm({ asset, onSaved }: { asset?: PortfolioRow; onSaved: () => vo
         <FormField id="current_qty" label="보유 수량" error={e.current_qty}>
           <Input name="current_qty" inputMode="decimal" defaultValue={v("current_qty", asset?.current_qty ?? 0)} required />
         </FormField>
-        <FormField id="current_price" label="현재가" error={e.current_price} hint="현금은 1">
-          <Input name="current_price" inputMode="decimal" defaultValue={v("current_price", asset?.current_price)} required />
+        <FormField id="current_price" label="현재가" error={e.current_price} hint="자동 시세면 비워도 됨 · 현금은 1">
+          <Input name="current_price" inputMode="decimal" defaultValue={v("current_price", asset?.current_price || "")} />
         </FormField>
         <FormField id="avg_buy_price" label="평균 매수가" error={e.avg_buy_price}>
           <Input name="avg_buy_price" inputMode="decimal" defaultValue={v("avg_buy_price", asset?.avg_buy_price || "")} />
@@ -104,6 +104,25 @@ function AssetForm({ asset, onSaved }: { asset?: PortfolioRow; onSaved: () => vo
           />
         </FormField>
       </div>
+      <fieldset className="bg-muted/50 grid gap-3 rounded-lg border p-3">
+        <label className="flex items-start gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            name="auto_price"
+            defaultChecked={state.values ? state.values.auto_price === "on" : (asset?.auto_price ?? true)}
+            className="accent-primary mt-0.5 size-4"
+          />
+          <span className="grid gap-0.5">
+            <span className="font-medium">실시간 시세 자동 반영</span>
+            <span className="text-muted-foreground text-xs">
+              티커로 현재가를 자동으로 가져옵니다. 국내주식·ETF는 6자리 코드(069500), 미국은 VOO, 코인은 BTC.
+            </span>
+          </span>
+        </label>
+        <FormField id="quote_symbol" label="시세 코드 (선택)" error={e.quote_symbol} hint="자동으로 못 찾을 때만: 예) 005930.KS, KRW-BTC">
+          <Input name="quote_symbol" defaultValue={v("quote_symbol", asset?.quote_symbol)} placeholder="비워두면 티커 사용" />
+        </FormField>
+      </fieldset>
       {state.message && !state.ok ? (
         <p role="alert" className="text-destructive text-sm">
           {state.message}

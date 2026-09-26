@@ -11,14 +11,14 @@ export function Stat({
   label: string;
   value: string;
   tone?: "critical";
-  note?: string;
+  note?: React.ReactNode;
 }) {
   return (
     <Card className="gap-1 py-4">
       <CardContent className="grid gap-1">
         <p className="text-muted-foreground text-xs">{label}</p>
         <p className={cn("text-xl font-semibold tabular-nums", tone === "critical" && "text-critical")}>{value}</p>
-        {note ? <p className="text-muted-foreground text-xs">{note}</p> : null}
+        {note ? <div className="text-muted-foreground text-xs">{note}</div> : null}
       </CardContent>
     </Card>
   );

@@ -44,6 +44,10 @@ export type Database = {
           tolerance_band: number;
           created_at: string;
           updated_at: string;
+          auto_price: boolean;
+          quote_symbol: string | null;
+          prev_close: number | null;
+          price_updated_at: string | null;
         };
         Insert: {
           id?: string;
@@ -59,6 +63,10 @@ export type Database = {
           tolerance_band?: number;
           created_at?: string;
           updated_at?: string;
+          auto_price?: boolean;
+          quote_symbol?: string | null;
+          prev_close?: number | null;
+          price_updated_at?: string | null;
         };
         Update: {
           id?: string;
@@ -74,6 +82,10 @@ export type Database = {
           tolerance_band?: number;
           created_at?: string;
           updated_at?: string;
+          auto_price?: boolean;
+          quote_symbol?: string | null;
+          prev_close?: number | null;
+          price_updated_at?: string | null;
         };
         Relationships: [];
       };
@@ -86,6 +98,8 @@ export type Database = {
           date: string;
           note: string | null;
           created_at: string;
+          plan_id: string | null;
+          asset_id: string | null;
         };
         Insert: {
           id?: string;
@@ -95,6 +109,8 @@ export type Database = {
           date?: string;
           note?: string | null;
           created_at?: string;
+          plan_id?: string | null;
+          asset_id?: string | null;
         };
         Update: {
           id?: string;
@@ -104,6 +120,8 @@ export type Database = {
           date?: string;
           note?: string | null;
           created_at?: string;
+          plan_id?: string | null;
+          asset_id?: string | null;
         };
         Relationships: [];
       };
@@ -112,15 +130,81 @@ export type Database = {
           user_id: string;
           usd_krw_rate: number;
           updated_at: string;
+          auto_fx: boolean;
+          fx_updated_at: string | null;
         };
         Insert: {
           user_id?: string;
           usd_krw_rate?: number;
           updated_at?: string;
+          auto_fx?: boolean;
+          fx_updated_at?: string | null;
         };
         Update: {
           user_id?: string;
           usd_krw_rate?: number;
+          updated_at?: string;
+          auto_fx?: boolean;
+          fx_updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      cash_flow_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          flow_type: CashFlowType;
+          amount: number;
+          day_of_month: number;
+          asset_id: string | null;
+          note: string | null;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          flow_type: CashFlowType;
+          amount: number;
+          day_of_month?: number;
+          asset_id?: string | null;
+          note?: string | null;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          flow_type?: CashFlowType;
+          amount?: number;
+          day_of_month?: number;
+          asset_id?: string | null;
+          note?: string | null;
+          active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      portfolio_snapshots: {
+        Row: {
+          user_id: string;
+          date: string;
+          total_value_krw: number;
+          invested_krw: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          date: string;
+          total_value_krw: number;
+          invested_krw?: number;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          date?: string;
+          total_value_krw?: number;
+          invested_krw?: number;
           updated_at?: string;
         };
         Relationships: [];

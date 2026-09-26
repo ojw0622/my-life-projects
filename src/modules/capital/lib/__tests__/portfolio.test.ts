@@ -19,6 +19,10 @@ function row(overrides: Partial<PortfolioRow>): PortfolioRow {
     avg_buy_price: 0,
     current_price: 1,
     tolerance_band: 0.03,
+    auto_price: true,
+    quote_symbol: null,
+    prev_close: null,
+    price_updated_at: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -171,5 +175,40 @@ describe("formatPercentPoint", () => {
     expect(formatPercentPoint(0.042)).toBe("+4.2%p");
     expect(formatPercentPoint(-0.042)).toBe("-4.2%p");
     expect(formatPercentPoint(-0.00001)).toBe("0.0%p");
+  });
+});
+
+describe("buildPortfolioView — P/L and daily change", () => {
+  it("computes cost basis, unrealised P/L and change since the previous close", () => {
+    const view = buildPortfolioView(
+      [
+        row({ current_qty: 10, avg_buy_price: 100, current_price: 120, prev_close: 110, target_ratio: 0.5 }),
+        row({ currency: "USD", current_qty: 2, avg_buy_price: 50, current_price: 40, prev_close: 50, target_ratio: 0.5 }),
+        row({ category: "cash", current_qty: 1000, current_price: 1 }),
+      ],
+      1000,
+    );
+    const [krw, usd, cash] = view.items;
+    expect(krw.costKrw).toBe(1000);
+    expect(krw.pnlKrw).toBe(200);
+    expect(krw.dayChange).toBeCloseTo(10 / 110, 10);
+    expect(krw.dayChangeKrw).toBe(100);
+    expect(usd.pnlKrw).toBe(80_000 - 100_000);
+    expect(usd.dayChangeKrw).toBe(-20_000);
+    expect(cash.pnlKrw).toBeNull();
+    expect(cash.dayChange).toBeNull();
+
+    expect(view.totalCostKrw).toBe(101_000);
+    expect(view.totalPnlKrw).toBe(200 - 20_000);
+    expect(view.totalPnlRate).toBeCloseTo(-19_800 / 101_000, 10);
+    expect(view.dayChangeKrw).toBe(100 - 20_000);
+    // Previous total = 1200 + 80000 + 1000 − (−19900) = 102100.
+    expect(view.dayChangeRate).toBeCloseTo(-19_900 / 102_100, 10);
+  });
+
+  it("reports no daily change when no previous close is known", () => {
+    const view = buildPortfolioView([row({ current_qty: 1, current_price: 10, target_ratio: 1 })], 1400);
+    expect(view.dayChangeRate).toBeNull();
+    expect(view.totalPnlRate).toBeNull();
   });
 });

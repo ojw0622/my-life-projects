@@ -8,7 +8,9 @@ import { WeeklyMileageCard } from "@/modules/body/components/weekly-mileage-card
 import { weeklyMileage } from "@/modules/body/lib/run";
 import { summarizeWorkouts } from "@/modules/body/lib/workout";
 import { getRecentRuns, getRecentWorkouts } from "@/modules/body/queries";
-import { formatMoney } from "@/modules/capital/lib/format";
+import { ChangeText } from "@/modules/capital/components/change-text";
+import { duePlans } from "@/modules/capital/lib/cash-flow";
+import { formatMoney, formatSignedMoney } from "@/modules/capital/lib/format";
 import { buildPortfolioView } from "@/modules/capital/lib/portfolio";
 import { getCapitalData } from "@/modules/capital/queries";
 import { SpacedReflection } from "@/modules/mind/components/spaced-reflection";
@@ -54,12 +56,18 @@ export default async function Home() {
 
         <ModuleCard href="/capital" title="자본" description="포트폴리오">
           <p className="text-2xl font-semibold tabular-nums">{formatMoney(portfolio.totalValueKrw)}</p>
+          {portfolio.dayChangeRate !== null ? (
+            <p className="text-sm">
+              <ChangeText rate={portfolio.dayChangeRate} amount={formatSignedMoney(portfolio.dayChangeKrw)} />
+            </p>
+          ) : null}
           <p className="text-muted-foreground text-sm">
             {portfolio.items.length === 0
               ? "자산을 등록하세요"
               : portfolio.outOfBandCount > 0
                 ? `밴드 이탈 ${portfolio.outOfBandCount}개 · 리밸런싱 검토`
                 : "모든 자산이 허용 밴드 안"}
+            {duePlans(capital.plans, capital.cashFlows, today).length > 0 ? " · 이번 달 입금 기록 대기" : ""}
           </p>
         </ModuleCard>
 

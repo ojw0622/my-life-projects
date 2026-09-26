@@ -17,6 +17,6 @@ describe("isMissingTableError", () => {
   });
 
   it("checks every table the app reads", () => {
-    expect(REQUIRED_TABLES).toEqual(["portfolios", "cash_flows", "capital_settings", "essays", "principles", "workouts", "runs"]);
+    expect(REQUIRED_TABLES).toEqual(["portfolios", "cash_flows", "capital_settings", "cash_flow_plans", "portfolio_snapshots", "essays", "principles", "workouts", "runs"]);
   });
 });

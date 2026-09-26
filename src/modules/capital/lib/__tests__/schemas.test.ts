@@ -52,3 +52,34 @@ describe("cashFlowFormSchema", () => {
     expect(cashFlowFormSchema.safeParse({ amount: "1", flow_type: "bonus", date: "2026-09-25" }).success).toBe(false);
   });
 });
+
+describe("capital v3 form fields", () => {
+  const asset = { asset_name: "VOO", category: "index_etf", currency: "USD", target_ratio: "50", current_qty: "1" };
+
+  it("reads the auto-price checkbox and allows a blank price", () => {
+    const parsed = assetFormSchema.parse({ ...asset, auto_price: "on", current_price: "" });
+    expect(parsed.auto_price).toBe(true);
+    expect(parsed.current_price).toBe(0);
+    expect(assetFormSchema.parse(asset).auto_price).toBe(false);
+  });
+
+  it("upper-cases the quote symbol", () => {
+    expect(assetFormSchema.parse({ ...asset, quote_symbol: "krw-btc" }).quote_symbol).toBe("KRW-BTC");
+  });
+
+  it("validates monthly plans", async () => {
+    const { planFormSchema } = await import("../schemas");
+    expect(planFormSchema.parse({ flow_type: "saving", amount: "500,000", day_of_month: "25" })).toMatchObject({
+      amount: 500_000,
+      day_of_month: 25,
+    });
+    expect(planFormSchema.safeParse({ flow_type: "saving", amount: "1", day_of_month: "31" }).success).toBe(false);
+    expect(planFormSchema.safeParse({ flow_type: "saving", amount: "0", day_of_month: "1" }).success).toBe(false);
+  });
+
+  it("accepts an optional asset on a cash flow", () => {
+    const base = { amount: "1000", flow_type: "dividend", date: "2026-09-01" };
+    expect(cashFlowFormSchema.parse(base).asset_id).toBeUndefined();
+    expect(cashFlowFormSchema.safeParse({ ...base, asset_id: "nope" }).success).toBe(false);
+  });
+});
