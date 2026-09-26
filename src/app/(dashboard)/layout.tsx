@@ -1,11 +1,11 @@
 import { SetupRequired } from "@/components/layout/setup-required";
 import { SiteHeader } from "@/components/layout/site-header";
 import { requireUser } from "@/lib/supabase/auth";
-import { findMissingTables } from "@/lib/supabase/schema-check";
+import { findMissingTables, REQUIRED_TABLES } from "@/lib/supabase/schema-check";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/">) {
   const { user } = await requireUser();
-  const missing = await findMissingTables();
+  const missing = await findMissingTables(...REQUIRED_TABLES);
 
   return (
     <>
