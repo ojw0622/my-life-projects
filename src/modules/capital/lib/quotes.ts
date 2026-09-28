@@ -29,6 +29,30 @@ export interface QuoteTarget {
   ticker: string | null;
   quote_symbol: string | null;
   auto_price: boolean;
+  /** Used to recognise well-known coins entered without a ticker. */
+  asset_name?: string;
+}
+
+/** Coins commonly entered by their Korean or English name. */
+const COIN_NAMES: Record<string, string> = {
+  비트코인: "BTC",
+  bitcoin: "BTC",
+  이더리움: "ETH",
+  ethereum: "ETH",
+  리플: "XRP",
+  엑스알피: "XRP",
+  솔라나: "SOL",
+  solana: "SOL",
+  도지코인: "DOGE",
+  dogecoin: "DOGE",
+  에이다: "ADA",
+  카르다노: "ADA",
+};
+
+/** Ticker guessed from a coin's name ("비트코인" → "BTC"), or null. */
+export function coinTickerFromName(name: string | undefined): string | null {
+  if (!name) return null;
+  return COIN_NAMES[name.replace(/\s+/g, "").toLowerCase()] ?? null;
 }
 
 const KR_CODE = /^[0-9][0-9A-Z]{5}$/;
@@ -48,7 +72,8 @@ export function quoteSources(asset: QuoteTarget): QuoteSource[] {
       : [{ provider: "yahoo", symbol: override }];
   }
 
-  const ticker = asset.ticker?.trim().toUpperCase();
+  const ticker =
+    asset.ticker?.trim().toUpperCase() || (asset.category === "crypto" ? coinTickerFromName(asset.asset_name) : null);
   if (!ticker) return [];
 
   if (asset.category === "crypto") {

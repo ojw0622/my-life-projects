@@ -12,6 +12,7 @@ export const REQUIRED_TABLES = [
   "capital_settings",
   "cash_flow_plans",
   "portfolio_snapshots",
+  "trades",
   "essays",
   "principles",
   "workouts",

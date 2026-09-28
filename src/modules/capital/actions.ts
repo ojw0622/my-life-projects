@@ -11,7 +11,15 @@ import { dbErrorState } from "@/lib/supabase/errors";
 import { monthOf, planDate } from "./lib/cash-flow";
 import { DEFAULT_USD_KRW_RATE } from "./lib/constants";
 import { buildPortfolioView } from "./lib/portfolio";
-import { assetFormSchema, cashFlowFormSchema, fxRateFormSchema, planFormSchema } from "./lib/schemas";
+import {
+  assetFormSchema,
+  cashFlowFormSchema,
+  fxRateFormSchema,
+  goalFormSchema,
+  planFormSchema,
+  tradeFormSchema,
+} from "./lib/schemas";
+import { applyTrade } from "./lib/trades";
 import { fetchQuote, fetchUsdKrw } from "./quote-fetch";
 
 function revalidate() {
@@ -251,4 +259,75 @@ export async function recordPlans(ids?: string[]): Promise<{ recorded: number; s
 
   revalidate();
   return { recorded, skipped: plans.length - recorded };
+}
+
+// ---------------------------------------------------------------------
+// Trades (매수 / 매도)
+// ---------------------------------------------------------------------
+
+/** Records a trade and updates the asset's quantity and average price. */
+export async function recordTrade(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = parseForm(tradeFormSchema, formData);
+  if (!parsed.success) return parsed.state;
+
+  const { supabase, user } = await requireUser();
+  const trade = parsed.data;
+  const { data: asset, error: assetError } = await supabase
+    .from("portfolios")
+    .select("id, current_qty, avg_buy_price")
+    .eq("id", trade.asset_id)
+    .maybeSingle();
+  if (assetError || !asset) return failWith({ ok: false, message: "자산을 찾을 수 없습니다." }, formData);
+
+  const result = applyTrade(
+    { quantity: Number(asset.current_qty), avgPrice: Number(asset.avg_buy_price) },
+    { side: trade.side, quantity: trade.quantity, price: trade.price, fee: trade.fee },
+  );
+  if (!result.ok) return failWith({ ok: false, fieldErrors: { quantity: result.error } }, formData);
+
+  const { error } = await supabase.from("trades").insert({
+    ...trade,
+    note: trade.note ?? null,
+    realized_pnl: result.realizedPnl,
+    user_id: user.id,
+  });
+  if (error) return failWith(dbErrorState(error), formData);
+
+  const { error: updateError } = await supabase
+    .from("portfolios")
+    .update({ current_qty: result.position.quantity, avg_buy_price: result.position.avgPrice })
+    .eq("id", asset.id);
+  if (updateError) return failWith(dbErrorState(updateError), formData);
+
+  revalidate();
+  return { ok: true, message: trade.side === "buy" ? "매수를 기록했습니다." : "매도를 기록했습니다." };
+}
+
+/** Removes a trade from the log; holdings stay as they are. */
+export async function deleteTrade(id: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("trades").delete().eq("id", id);
+  if (error) throw new Error("거래 기록을 삭제하지 못했습니다.");
+  revalidate();
+}
+
+// ---------------------------------------------------------------------
+// Goal (재무 목표)
+// ---------------------------------------------------------------------
+
+export async function saveGoal(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = parseForm(goalFormSchema, formData);
+  if (!parsed.success) return parsed.state;
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("capital_settings").upsert({
+    user_id: user.id,
+    goal_amount: parsed.data.goal_amount ?? null,
+    goal_date: parsed.data.goal_date ?? null,
+    expected_return: parsed.data.expected_return,
+  });
+  if (error) return failWith(dbErrorState(error), formData);
+
+  revalidate();
+  return { ok: true, message: "목표를 저장했습니다." };
 }

@@ -1,9 +1,9 @@
 -- =====================================================================
--- My Life Dashboard — Supabase schema (v3)
+-- My Life Dashboard — Supabase schema (v4)
 --
 -- Modules
 --   * Capital : portfolios, cash_flows, capital_settings,
---               cash_flow_plans, portfolio_snapshots
+--               cash_flow_plans, portfolio_snapshots, trades
 --   * Mind    : essays, principles
 --   * Body    : workouts, runs
 --   * Tower   : tower_docs (지원 관제탑, document store)
@@ -128,6 +128,37 @@ create table if not exists public.portfolio_snapshots (
   updated_at       timestamptz not null default now(),
   primary key (user_id, date)
 );
+
+-- ---------------------------------------------------------------------
+-- Capital v4: trades and goals
+-- ---------------------------------------------------------------------
+
+-- 매수 / 매도 기록. Recording a trade also updates the asset's quantity and
+-- average buy price; realized_pnl (KRW-or-USD, the asset's currency) is
+-- fixed at the time of a sale.
+create table if not exists public.trades (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  asset_id     uuid not null references public.portfolios (id) on delete cascade,
+  side         text not null check (side in ('buy', 'sell')),
+  quantity     numeric(24, 8) not null check (quantity > 0),
+  price        numeric(20, 4) not null check (price >= 0),
+  fee          numeric(20, 4) not null default 0 check (fee >= 0),
+  realized_pnl numeric(20, 4),
+  date         date not null default current_date,
+  note         text check (note is null or char_length(note) <= 200),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists trades_user_date_idx on public.trades (user_id, date desc);
+
+-- 재무 목표: target amount and date, plus the expected yearly return used
+-- for the projection.
+alter table public.capital_settings add column if not exists goal_amount numeric(24, 2)
+  check (goal_amount is null or goal_amount > 0);
+alter table public.capital_settings add column if not exists goal_date date;
+alter table public.capital_settings add column if not exists expected_return numeric(5, 4) not null default 0.06
+  check (expected_return between -0.5 and 1);
 
 -- =====================================================================
 -- Mind module
@@ -256,6 +287,7 @@ begin
     'capital_settings',
     'cash_flow_plans',
     'portfolio_snapshots',
+    'trades',
     'essays',
     'principles',
     'workouts',

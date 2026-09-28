@@ -205,3 +205,93 @@ export function ValueHistoryChart({ data }: { data: ValuePoint[] }) {
     </figure>
   );
 }
+
+export interface ProjectionDatum {
+  month: string;
+  value: number;
+  contributed: number;
+}
+
+/** Projected value towards a goal: value area, money put in (dashed), goal line. */
+export function ProjectionChart({ data, goal, goalMonth }: { data: ProjectionDatum[]; goal: number; goalMonth: string | null }) {
+  const last = data.at(-1)!;
+  const summary = `${last.month}까지 예상 평가액 ${formatMoney(last.value)}, 목표 ${formatMoney(goal)}`;
+  // Long horizons: one tick per January, thinned to at most ~8 labels.
+  const januaries = data.map((d) => d.month).filter((m) => m.endsWith("-01"));
+  const step = Math.max(1, Math.ceil(januaries.length / 8));
+  const yearTicks = januaries.filter((_, i) => i % step === 0);
+
+  return (
+    <figure className="grid min-w-0 gap-3">
+      <figcaption>
+        <Legend
+          items={[
+            { label: "예상 평가액", swatch: <span className="bg-series-1 inline-block h-0.5 w-4" aria-hidden /> },
+            { label: "넣은 돈", swatch: <span className="border-muted-foreground inline-block w-4 border-t-2 border-dashed" aria-hidden /> },
+            { label: `목표 ${formatMoney(goal)}`, swatch: <span className="border-foreground/60 inline-block w-4 border-t-2 border-dotted" aria-hidden /> },
+          ]}
+        />
+      </figcaption>
+      <div role="img" aria-label={summary} className="h-60">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="projection-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <XAxis
+              dataKey="month"
+              ticks={data.length > 24 ? yearTicks : undefined}
+              tickFormatter={(m: string) => (data.length > 24 ? `${m.slice(0, 4)}년` : `${Number(m.slice(5))}월`)}
+              interval={data.length > 24 ? 0 : "preserveStartEnd"}
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              minTickGap={8}
+            />
+            <YAxis tickFormatter={compactKrw} tick={axisTick} axisLine={false} tickLine={false} width={56} />
+            <Tooltip
+              content={({ active, payload }) => {
+                const d = payload?.[0]?.payload as ProjectionDatum | undefined;
+                return d ? (
+                  <ChartTooltip
+                    active={active}
+                    label={d.month}
+                    rows={[
+                      { name: "예상 평가액", value: d.value },
+                      { name: "넣은 돈", value: d.contributed },
+                    ]}
+                  />
+                ) : null;
+              }}
+            />
+            <ReferenceLine y={goal} stroke="var(--foreground)" strokeOpacity={0.6} strokeDasharray="2 3" />
+            {goalMonth ? (
+              <ReferenceLine x={goalMonth} stroke="var(--foreground)" strokeOpacity={0.35} strokeDasharray="2 3" />
+            ) : null}
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="var(--series-1)"
+              strokeWidth={2}
+              fill="url(#projection-fill)"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="contributed"
+              stroke="var(--muted-foreground)"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              isAnimationActive={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </figure>
+  );
+}

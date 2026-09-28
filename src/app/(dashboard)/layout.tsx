@@ -24,6 +24,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
           <SetupRequired missing={missing} />
         )}
       </main>
+      <footer className="text-muted-foreground/70 mx-auto w-full max-w-6xl px-4 pb-6 text-[11px]">
+        {/* Shows which build is live, so a deploy can be confirmed at a glance. */}
+        버전 {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local"}
+      </footer>
     </>
   );
 }

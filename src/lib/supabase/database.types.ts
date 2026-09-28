@@ -24,6 +24,7 @@ export type PortfolioCategory =
   | "other";
 export type Currency = "KRW" | "USD";
 export type CashFlowType = "saving" | "dividend";
+export type TradeSide = "buy" | "sell";
 export type PrincipleCategory = "investment" | "life" | "body";
 
 export type Database = {
@@ -132,6 +133,9 @@ export type Database = {
           updated_at: string;
           auto_fx: boolean;
           fx_updated_at: string | null;
+          goal_amount: number | null;
+          goal_date: string | null;
+          expected_return: number;
         };
         Insert: {
           user_id?: string;
@@ -139,6 +143,9 @@ export type Database = {
           updated_at?: string;
           auto_fx?: boolean;
           fx_updated_at?: string | null;
+          goal_amount?: number | null;
+          goal_date?: string | null;
+          expected_return?: number;
         };
         Update: {
           user_id?: string;
@@ -146,6 +153,9 @@ export type Database = {
           updated_at?: string;
           auto_fx?: boolean;
           fx_updated_at?: string | null;
+          goal_amount?: number | null;
+          goal_date?: string | null;
+          expected_return?: number;
         };
         Relationships: [];
       };
@@ -206,6 +216,48 @@ export type Database = {
           total_value_krw?: number;
           invested_krw?: number;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      trades: {
+        Row: {
+          id: string;
+          user_id: string;
+          asset_id: string;
+          side: TradeSide;
+          quantity: number;
+          price: number;
+          fee: number;
+          realized_pnl: number | null;
+          date: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          asset_id: string;
+          side: TradeSide;
+          quantity: number;
+          price: number;
+          fee?: number;
+          realized_pnl?: number | null;
+          date?: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          asset_id?: string;
+          side?: TradeSide;
+          quantity?: number;
+          price?: number;
+          fee?: number;
+          realized_pnl?: number | null;
+          date?: string;
+          note?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

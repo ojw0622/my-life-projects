@@ -66,3 +66,28 @@ export const planFormSchema = z.object({
   asset_id: z.preprocess(blankToUndefined, z.uuid().optional()),
   note: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
 });
+
+export const tradeFormSchema = z.object({
+  asset_id: z.uuid({ error: "자산을 선택하세요." }),
+  side: z.enum(["buy", "sell"], { error: "매수/매도를 선택하세요." }),
+  quantity: number("수량").refine((v) => v > 0, { error: "수량은 0보다 커야 합니다." }),
+  price: number("가격").refine((v) => v >= 0, { error: "가격은 0 이상이어야 합니다." }),
+  fee: z.preprocess(
+    blankToUndefined,
+    number("수수료").refine((v) => v >= 0, { error: "수수료는 0 이상이어야 합니다." }).default(0),
+  ),
+  date: z.iso.date({ error: "날짜를 확인하세요." }),
+  note: z.preprocess(blankToUndefined, z.string().trim().max(200).optional()),
+});
+
+export const goalFormSchema = z.object({
+  goal_amount: z.preprocess(
+    blankToUndefined,
+    number("목표 금액").refine((v) => v > 0, { error: "목표 금액은 0보다 커야 합니다." }).optional(),
+  ),
+  goal_date: z.preprocess(blankToUndefined, z.iso.date({ error: "날짜를 확인하세요." }).optional()),
+  // Entered as a percentage ("6" → 0.06).
+  expected_return: number("기대 수익률")
+    .refine((v) => v >= -50 && v <= 100, { error: "기대 수익률은 -50~100% 사이여야 합니다." })
+    .transform((v) => Math.round(v * 100) / 10_000),
+});
