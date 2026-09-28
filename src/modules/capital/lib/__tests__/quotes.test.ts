@@ -96,3 +96,17 @@ describe("parsers", () => {
     expect(dailyChange(110, 0)).toBeNull();
   });
 });
+
+describe("coin names without a ticker", () => {
+  const coin = { category: "crypto" as const, currency: "KRW" as const, ticker: null, quote_symbol: null, auto_price: true };
+
+  it("recognises well-known coins by name", () => {
+    expect(quoteSources({ ...coin, asset_name: "비트코인" })[0]).toEqual({ provider: "upbit", symbol: "KRW-BTC" });
+    expect(quoteSources({ ...coin, asset_name: "Ethereum" })[0]).toEqual({ provider: "upbit", symbol: "KRW-ETH" });
+  });
+
+  it("stays manual for unknown names and non-crypto assets", () => {
+    expect(quoteSources({ ...coin, asset_name: "알수없는코인" })).toEqual([]);
+    expect(quoteSources({ ...coin, category: "stock", asset_name: "비트코인" })).toEqual([]);
+  });
+});

@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { CopySchemaButton } from "./copy-schema-button";
+
 const SCHEMA_URL = "https://github.com/ojw0622/my-life-projects/blob/main/supabase/schema.sql";
 
 /** Shown instead of the dashboard until supabase/schema.sql has been run. */
@@ -21,10 +23,9 @@ export function SetupRequired({
       <CardContent className="grid gap-5 text-sm">
         <ol className="grid list-decimal gap-3 pl-5 leading-relaxed">
           <li>
-            <a href={SCHEMA_URL} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-4">
-              schema.sql 파일 열기
-            </a>{" "}
-            → 코드 오른쪽 위의 <b>복사 버튼(📋 Copy raw file)</b>을 누릅니다.
+            <span className="flex flex-wrap items-center gap-2">
+              아래 버튼을 눌러 SQL을 복사합니다. <CopySchemaButton fallbackUrl={SCHEMA_URL} />
+            </span>
           </li>
           <li>
             Supabase 대시보드 왼쪽 메뉴에서 <b>SQL Editor</b>를 누르고, 빈 칸에 붙여넣습니다.
